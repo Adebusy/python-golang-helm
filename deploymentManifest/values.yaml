@@ -1,0 +1,17 @@
+replicaCount: 1
+appNamespace: infrastore
+image:
+  containerregistry: testregadebusy.azurecr.io
+  repository: infrastoreapi
+  pullPolicy: IfNotPresent
+  tag: v1.0.0
+port: 8000
+targetPort: 8000
+maxReplicas: 2
+minReplicas: 1
+
+env:
+  DJANGO_SUPERUSER_USERNAME: admin
+
+secret:
+  DJANGO_SUPERUSER_PASSWORD: ""

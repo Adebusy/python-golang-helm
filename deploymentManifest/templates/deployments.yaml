@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: {{ .Values.image.repository }}
+  name: {{ .Values.image.repository }}-deployment
+  namespace: {{ .Values.appNamespace }}-ns
+spec:
+  replicas: {{ default 1 .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Values.image.repository }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.image.repository }}
+    spec:
+      volumes:
+      - name: mypd
+        persistentVolumeClaim:
+            claimName: {{ .Values.image.repository }}-pvc
+      containers:
+        - image: "{{ .Values.image.containerregistry }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          name: {{ .Values.image.repository }}
+          ports:
+            - containerPort : {{ .Values.port }}
+          resources:
+            requests:
+              cpu: {{ default "100m" (.Values.resources).requests.cpu }}
+              memory: {{ default "100Mi" (.Values.resources).requests.memory }}
+            limits:
+              cpu: {{ default "100m" (.Values.resources).limits.cpu }}
+              memory: {{ default "100Mi" (.Values.resources).limits.memory }}
+          volumeMounts:
+          - mountPath: "/mnt/data/infrastore"
+            name: mypd
+          env:
+          {{- range $key, $val := .Values.env }}
+           - name: {{ $key }}
+             value: {{ $val | quote }}
+          {{- end }}
+           - name: DJANGO_SUPERUSER_PASSWORD
+             valueFrom:
+              secretKeyRef:
+                name: {{ .Values.image.repository }}-secret
+                key: DJANGO_SUPERUSER_PASSWORD
+          envFrom:
+           - secretRef:
+              name: {{ .Values.image.repository }}-secret
+      imagePullSecrets:
+      - name: acr-secret
